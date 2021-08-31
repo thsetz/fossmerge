@@ -14,12 +14,12 @@ Currently the docx-file analysis is based on pandoc==>html==>bs4 ==> dict.
 
   Commands:
 
-  --------------  -------------------------------------
-  Log             Add a Log Message to the log.
-  analyze_clixml  Extract data from clixml File.
-  analyze_report  Extract Table data from docx File.
-  merge_report    Extract data from clixml File.
-  --------------  -------------------------------------
+  ============== =====================================
+  Log            Add a Log Message to the log.
+  analyze_clixml Extract data from clixml File.
+  analyze_report Extract Table data from docx File.
+  merge_report   Extract data from clixml File.
+  ============== =====================================
 
 
 
