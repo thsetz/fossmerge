@@ -1,32 +1,43 @@
 The fossreport cmdline 
 ======================
 
-Analyzing docx/clixml files and merging them.
+POC: Analyzing docx/clixml files and merging them.
+
+Currently the docx-file analysis is based on pandoc==>html==>bs4 ==> dict.
 
 
-..code:: bash
+**Even if using the same bs4 parser engine (lxml) the parse results are different on mac/ubuntu.**
+
+
+
+
 
   Commands:
+
+  --------------  -------------------------------------
   Log             Add a Log Message to the log.
   analyze_clixml  Extract data from clixml File.
   analyze_report  Extract Table data from docx File.
   merge_report    Extract data from clixml File.
+  --------------  -------------------------------------
 
 
 
+Test
+----
 
 
-Build
------
+*make test*
 
 
-- Build documentation:
+Doc
+---
 
-  To build it locally
 
-  .. code:: shell
+*make doc*
 
-     poetry run sphinx-build -b html docs-source docs/
+
+
 
 
 
