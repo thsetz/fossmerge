@@ -1,0 +1,30 @@
+name: Fossmerge Tests
+
+on:
+  push:
+
+jobs:
+  test-latest:
+    name: Integration Tests (latest Fossology)
+    runs-on: ubuntu-latest
+
+    container:
+      image: python:3.9-slim
+
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install host dependencies
+        run: |
+          apt-get -qq update
+      - name: Install Python dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Run tests
+        run: |
+          poetry run  coverage run  --source=fossmerge -m pytest -vvv --tb=auto  tests
+          poetry run coverage report -m
+ 
+
+
