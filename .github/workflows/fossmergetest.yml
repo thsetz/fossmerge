@@ -19,6 +19,7 @@ jobs:
           apt-get -qq update
           apt-get -qq upgrade
           apt-get install -y pandoc
+          apt-get install -y python3-lxml
       - name: Install Python dependencies
         run: |
           pip install poetry
