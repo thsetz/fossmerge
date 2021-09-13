@@ -41,7 +41,8 @@ def convert_clixml_to_xmldict(file_name: os.path):
     """ """
     """
     logger.debug(f"convert_and_analyze_clixml called with file_name {file_name} ")
-    doc = xmltodict.parse(open(file_name, "rb"), dict_constructor=dict)
+    # doc = xmltodict.parse(open(file_name, "rb"), dict_constructor=dict)
+    doc = xmltodict.parse(open(file_name, "rb"))
     return doc
 
 

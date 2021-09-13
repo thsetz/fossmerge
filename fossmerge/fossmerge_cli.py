@@ -126,12 +126,16 @@ def analyze_report(ctx, report_file_name, report_table_name):
         for table_name in AVAILABLE_TABLES.keys():
             print(f"{table_name}")
             ctx.obj["TABLE_NAME"] = report_table_name
-            ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name)
-            logger.debug(pprint.pformat(f'{ctx.obj["AVAILABLE_TABLES"][table_name]}'))
+            # REPORT_DICT
+            (
+                ctx.obj["AVAILABLE_TABLES"],
+                ctx.obj["REPORT_DICT"],
+            ) = convert_and_analyze_docx(report_file_name)
+            # logger.debug(pprint.pformat(f'{ctx.obj["AVAILABLE_TABLES"][table_name]}'))
 
     else:
         ctx.obj["TABLE_NAME"] = report_table_name
-        ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name)
+        ctx.obj["AVAILABLE_TABLES"], ld = convert_and_analyze_docx(report_file_name)
 
     # if report_table_name:
     #    logger.debug(pprint.pformat(f'{ctx.obj["AVAILABLE_TABLES"][table_name]}'))
@@ -149,12 +153,14 @@ def analyze_clixml(ctx, clixml_file_name, clixml_section):
     logger.debug(f"analyze_clixml called with file_name {clixml_file_name} ")
     ctx.obj["CLIXML_FILE_NAME"] = clixml_file_name
     ctx.obj["CLIXML_DICT"] = convert_clixml_to_xmldict(clixml_file_name)
+    print(f'{type(ctx.obj["CLIXML_DICT"])}')
     modified, ctx.obj["CLIXML_NORMALIZED_DICT"] = check_xmldict(ctx.obj["CLIXML_DICT"])
     if modified:
         logger.warning(f"analyze_clixml  {clixml_file_name} format hat to be changed ")
         diff_xmldict(ctx.obj["CLIXML_NORMALIZED_DICT"], ctx.obj["CLIXML_DICT"])
     else:
         logger.debug(f"analyze_clixml  {clixml_file_name} format was OK ")
+
     if clixml_section == "ALL":
         print(pprint.pformat((ctx.obj["CLIXML_NORMALIZED_DICT"])))
 

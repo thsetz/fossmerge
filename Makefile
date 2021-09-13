@@ -19,39 +19,40 @@ REPORT_TABLE_3 = irrelevant-files
 CLIXML_SECTION_4 = ?????     ==>>  Does not exist
 # ??????????????????????????????????????????????
 REPORT_TABLE_4 = comment-for-irrelevant-files
-VERBOSE  = -v 
+VERBOSE  = -vv 
 
 clean:
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
 	/bin/rm -fR docs
 	/bin/rm -fR docs-source/-autosummary
 
+black:
+	poetry run  black tests
+	poetry run  black fossmerge
+
 doc:
 	poetry run sphinx-build -b html docs-source docs/
 
 test: black
-	poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE) --tb=auto  tests
+	poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE) 
 
 # - 17. Comparing Irrelevant Files
 run: black
 	#Hinterläßt in fossmerge/fossmerge_cli.py:147   ctx.obj["CLIXML_FILE_NAME"] = clixml_file_name
 	# einen ctx Eintrag in dem die Datei als  dict steht. 
-	poetry run python -m fossmerge $(VERBOSE) analyze_clixml --clixml_file_name $(CLI_FILE1) --clixml_section ALL
+	#poetry run python -m fossmerge  $(VERBOSE) analyze_clixml --clixml_file_name $(CLI_FILE1) # --clixml_section ALL
 	# Hinterlaesst in  fossmerge/fossmerge_cli.py:126 ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name) 
 	# einen ctx Eintrag: in dem der das report-xml dokument als dict drinn steht
-	poetry run python -m fossmerge $(VERBOSE) analyze_report --report_file_name $(REPORT_FILE1) --report_table_name ALL
+	#poetry run python -m fossmerge $(VERBOSE)  analyze_report --report_file_name $(REPORT_FILE1)  --report_table_name ALL
 	# Verbinde nun die vorigen Kommandos (clixml und report stehen als lokale dictionaries zur Verfügung)
 	# und schaue wie man aktualisieren kann
-	poetry run python -m fossmerge $(VERBOSE)  merge_report \
+	poetry run python -m fossmerge $(VERBOSE)   merge_report \
 		--clixml_file_name $(CLI_FILE1) \
 		--clixml_section $(CLIXML_SECTION_3) \
 		--report_file_name $(REPORT_FILE1)\
 		 --report_table_name  $(REPORT_TABLE_3)
 
 
-black:
-	poetry run  black tests
-	poetry run  black fossmerge
 
 
 

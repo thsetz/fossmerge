@@ -25,8 +25,6 @@ def test_current_report(runner, docx_report_file):
         obj=d,
         catch_exceptions=False,
     )
-    print(result.stdout)
-    print(pprint.pformat(d, indent=1, width=100))
     assert d["VERBOSE"] == 2
     available_tables = d["AVAILABLE_TABLES"]
     assert isinstance(available_tables, dict)
@@ -48,12 +46,11 @@ def test_current_state(runner, cli_xml_file):
         obj=d,
         catch_exceptions=False,
     )
-    # print(result.stdout)
     assert d["VERBOSE"] == 1
     doc = d["CLIXML_DICT"]
-    # assert isinstance(doc, OrderedDict)
-    # x = xmltodict.unparse(doc,pretty=True)
-    # print(x)
+    assert isinstance(doc, OrderedDict)
+    x = xmltodict.unparse(doc, pretty=True)
+    print(x)
     assert result.exit_code == 0
 
 
@@ -78,12 +75,10 @@ def test_merge_report(runner, cli_xml_file, docx_report_file):
         obj=d,
         catch_exceptions=False,
     )
-    # print(result.stdout)
     assert d["VERBOSE"] == 2
-    # doc = d["CLIXML_DICT"]
-    # assert isinstance(doc, OrderedDict)
-    # x = xmltodict.unparse(doc,pretty=True)
-    # print(x)
+    doc = d["CLIXML_DICT"]
+    assert isinstance(doc, OrderedDict)
+    x = xmltodict.unparse(doc, pretty=True)
     assert result.exit_code == 0
 
     """

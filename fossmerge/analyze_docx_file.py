@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 RESULT_DIR = ".foss_merge_resultfiles"
+
 AVAILABLE_TABLES = {
     "FIRST": {
         "COLUMN_CONTENT": ("Key", "Value", "Comment"),
@@ -137,6 +138,13 @@ AVAILABLE_TABLES = {
 }
 
 
+def reset():
+    global AVAILABLE_TABLES
+    logger.warning("Reset AVAILABLE_TABLES")
+    for table in AVAILABLE_TABLES.keys():
+        AVAILABLE_TABLES[table]["ROWS"] = list()
+
+
 def convert_to_html(filename: str):
     """[Convert docx-file to html]
     :param filename: [Path to input (docx) File.]
@@ -202,6 +210,7 @@ def analyse(html_string: str):
         os.mkdir(RESULT_DIR)
     current_id = "FIRST"
     amount_tables = 0
+    ld = {}
     for tag in soup.find_all(True):
         if tag.name == "h2" or tag.name == "h3":
             current_id = tag.attrs["id"]
@@ -218,45 +227,62 @@ def analyse(html_string: str):
                 tds = rows_in_table[row_number].find_all("td")
                 row = [td.text.strip() for td in tds]
                 AVAILABLE_TABLES[current_id]["ROWS"].append(row)
-
+            print(f' {current_id} has {len(AVAILABLE_TABLES[current_id]["ROWS"])} rows')
             # generate each table as list of dict ==> eases debugging ....
-            ld = []
-            for row in range(len(AVAILABLE_TABLES[current_id]["ROWS"])):
-                d = {}
-                if current_id == "FIRST":
-                    # Currently the FIRST table has 1-3 columns - fix this here to
-                    # Always three columns
-                    # "COLUMN_CONTENT": ("Key","Value","Comment"),
-                    if len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 1:
-                        d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
-                        d["Value"] = None
-                        d["Comment"] = None
-                    elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 2:
-                        d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
-                        d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
-                        d["Comment"] = None
-                    elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 3:
-                        d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
-                        d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
-                        d["Comment"] = AVAILABLE_TABLES[current_id]["ROWS"][row][2]
+            if True:
+                ld[current_id] = []
+                for row in range(len(AVAILABLE_TABLES[current_id]["ROWS"])):
+                    d = {}
+                    if current_id == "FIRST":
+                        # Currently the FIRST table has 1-3 columns - fix this here to
+                        # Always three columns
+                        # "COLUMN_CONTENT": ("Key","Value","Comment"),
+                        # lxml handles the FIRST table different on ubuntu/mac
+                        #
+                        undefined_value = ""
+                        if len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 1:
+                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
+                            d["Value"] = undefined_value
+                            d["Comment"] = undefined_value
+                        elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 2:
+                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
+                            d["Key"] = undefined_value
+                            d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
+                            # d["Comment"] = undefined_value
+                            d["Comment"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
+                        elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 3:
+                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
+                            d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
+                            d["Comment"] = AVAILABLE_TABLES[current_id]["ROWS"][row][2]
+                        else:
+                            logger.fatal(
+                                "IMPOSSIBLE Data: FIRST table has more than three columns: "
+                            )
+                            raise
                     else:
-                        logger.fatal(
-                            "IMPOSSIBLE Data: FIRST table has more than three columns: "
-                        )
-                        raise
-                else:
-                    for elem in enumerate(
-                        AVAILABLE_TABLES[current_id]["COLUMN_CONTENT"]
-                    ):
-                        # elems are e.g. (0, 'Statements') (1, 'Comments') (2, 'File path')
-                        d[elem[1]] = AVAILABLE_TABLES[current_id]["ROWS"][row][elem[0]]
+                        for elem in enumerate(
+                            AVAILABLE_TABLES[current_id]["COLUMN_CONTENT"]
+                        ):
+                            # elems are e.g. (0, 'Statements') (1, 'Comments') (2, 'File path')
+                            d[elem[1]] = AVAILABLE_TABLES[current_id]["ROWS"][row][
+                                elem[0]
+                            ]
 
-                    logger.debug(f'row: {AVAILABLE_TABLES[current_id]["ROWS"][row]}')
-                    if len(d.keys()) != len(AVAILABLE_TABLES[current_id]["ROWS"][row]):
-                        print(
-                            f'table {current_id}:{row} \n d  {len(d.keys())} \n {len(AVAILABLE_TABLES[current_id]["ROWS"][row])}'
+                        logger.debug(
+                            f'row: {AVAILABLE_TABLES[current_id]["ROWS"][row]}'
                         )
-                ld.append(d)
+                        if len(d.keys()) != len(
+                            AVAILABLE_TABLES[current_id]["ROWS"][row]
+                        ):
+                            print(
+                                f'table {current_id}:{row} \n d  {len(d.keys())} \n {len(AVAILABLE_TABLES[current_id]["ROWS"][row])}'
+                            )
+
+                    ld[current_id].append(d)
+
+                # print(f"START:  Current Table {current_id}")
+                # print(pprint.pformat(ld[current_id]))
+                # print(f"START:  Current Table {current_id}")
 
             # Save the list of the table
             with open(f"{RESULT_DIR}/{current_id}", "w") as fp:
@@ -264,4 +290,4 @@ def analyse(html_string: str):
             # Save the dict of the table
             with open(f"{RESULT_DIR}/{current_id}_d", "w") as fp:
                 fp.write(pprint.pformat(ld))
-    return AVAILABLE_TABLES
+    return AVAILABLE_TABLES, ld

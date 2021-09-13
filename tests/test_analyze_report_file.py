@@ -7,40 +7,139 @@ def test_that_the_fixture_returns_an_existing_file(docx_report_file):
     assert os.path.exists(docx_report_file)
 
 
-def test_that_the_state_xml_file_is_analyzed_as_expected(docx_report_file):
-    ds = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
+def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_FIRST_values(
+    docx_report_file,
+):
+    analyze_docx_file.reset()
+    ds, ld = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
     tables = analyze_docx_file.AVAILABLE_TABLES
     assert ds.keys() == tables.keys()
-    assert tables["FIRST"]["ROWS"] == [
-        ["OSS Component Clearing report"],
-        ["Clearing Information", "Department", "FOSSology Generation"],
-        ["Prepared by", "2019/10/16 siddarth.hs@siemens.com (CT BE)"],
-        ["Reviewed by (opt.)", "2019/10/16 anju.john@siemens.com (CT BE)"],
-        ["Report release date", "NA"],
-        ["Component Information", "Community", "NA"],
-        ["Component", "zlib"],
-        ["Version", "1.2.11"],
-        ["Component hash (SHA-1)", "11196A78B14DDBCF82FA9E4ADD00F76323E93345"],
-        ["Release date", "NA"],
-        ["Main license(s)", "Zlib."],
-        ["", "Other license(s)", "Info-ZIP, Public-domain."],
-        [
-            "",
-            "Fossology Upload/Package Link",
-            "https://fossology.siemens.com/repo/?mod=showjobs&upload=19716",
-        ],
-        [
-            "",
-            "SW360 Portal Link",
-            "https://sw360.siemens.com/group/guest/components/-/component/release/detailRelease/7f75885d309970833f4187295dc54718",
-        ],
-        [
-            "",
-            "Result of License Scan",
-            "GPL, Info-ZIP, No_license_found, Perl-possibility, Public-domain, "
-            "See-doc.OTHER, UnclassifiedLicense, Zlib, Zlib-possibility.",
-        ],
+    print(type(tables["FIRST"]["ROWS"][0]))
+    print(pprint.pformat(tables["FIRST"]["ROWS"]))
+    assert ld["FIRST"][0] == {
+        "Comment": "",
+        "Key": "OSS Component Clearing report",
+        "Value": "",
+    }
+
+    assert ld["FIRST"][1] == {
+        "Comment": "FOSSology Generation",
+        "Key": "Clearing Information",
+        "Value": "Department",
+    }
+
+    assert ld["FIRST"][2] == {
+        "Comment": "2019/10/16 siddarth.hs@siemens.com (CT BE)",
+        "Key": "",
+        "Value": "Prepared by",
+    }
+
+    assert ld["FIRST"][3] == {
+        "Comment": "2019/10/16 anju.john@siemens.com (CT BE)",
+        "Key": "",
+        "Value": "Reviewed by (opt.)",
+    }
+
+    assert ld["FIRST"][4] == {
+        "Comment": "NA",
+        "Key": "",
+        "Value": "Report release date",
+    }
+    assert ld["FIRST"][5] == {
+        "Comment": "NA",
+        "Key": "Component Information",
+        "Value": "Community",
+    }
+    assert ld["FIRST"][6] == {"Comment": "zlib", "Key": "", "Value": "Component"}
+
+    assert ld["FIRST"][7] == {"Comment": "1.2.11", "Key": "", "Value": "Version"}
+
+    assert ld["FIRST"][8] == {
+        "Comment": "11196A78B14DDBCF82FA9E4ADD00F76323E93345",
+        "Key": "",
+        "Value": "Component hash (SHA-1)",
+    }
+
+    assert ld["FIRST"][9] == {"Comment": "NA", "Key": "", "Value": "Release date"}
+
+    assert ld["FIRST"][10] == {
+        "Comment": "Zlib.",
+        "Key": "",
+        "Value": "Main license(s)",
+    }
+    assert ld["FIRST"][11] == {
+        "Comment": "Info-ZIP, Public-domain.",
+        "Key": "",
+        "Value": "Other license(s)",
+    }
+    assert ld["FIRST"][12] == {
+        "Comment": "https://fossology.siemens.com/repo/?mod=showjobs&upload=19716",
+        "Key": "",
+        "Value": "Fossology Upload/Package Link",
+    }
+
+    assert ld["FIRST"][13] == {
+        "Comment": "https://sw360.siemens.com/group/guest/components/-/component/release/detailRelease/7f75885d309970833f4187295dc54718",
+        "Key": "",
+        "Value": "SW360 Portal Link",
+    }
+    assert ld["FIRST"][14] == {
+        "Comment": "GPL, Info-ZIP, No_license_found, Perl-possibility, "
+        "Public-domain, See-doc.OTHER, UnclassifiedLicense, Zlib, "
+        "Zlib-possibility.",
+        "Key": "",
+        "Value": "Result of License Scan",
+    }
+
+
+def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_NON_FIRST_values(
+    docx_report_file,
+):
+    analyze_docx_file.reset()
+
+    ds, ld = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
+    tables = analyze_docx_file.AVAILABLE_TABLES
+    tables = analyze_docx_file.AVAILABLE_TABLES
+    assert ds.keys() == tables.keys()
+    assert len(tables["assessment-summary"]["ROWS"]) == 8
+
+    assert tables["assessment-summary"]["ROWS"][0] == [
+        "General assessment",
+        "The global license of this component is licensed under Zlib Licence. Only "
+        "common rules apply for this component.\n"
+        "This clearing is for combined source package which includes the debian "
+        "modifications/extensions to the original/upstream source from the OSS "
+        "project.",
     ]
+    assert tables["assessment-summary"]["ROWS"][1] == ["", ""]
+
+    assert tables["assessment-summary"]["ROWS"][2] == [
+        "Source / binary integration notes",
+        "1 no critical files found, source code and binaries can be used as is\n"
+        "critical files found, source code needs to be adapted and binaries possibly "
+        "re-built",
+    ]
+    assert tables["assessment-summary"]["ROWS"][3] == [
+        "Dependency notes",
+        "1 no dependencies found, neither in source code nor in binaries\n"
+        "dependencies found in source code (see obligations)\n"
+        "dependencies found in binaries (see obligations)",
+    ]
+    assert tables["assessment-summary"]["ROWS"][4] == [
+        "Export restrictions by copyright owner",
+        "1 no export restrictions found\n"
+        "export restrictions found (see obligations)",
+    ]
+    assert tables["assessment-summary"]["ROWS"][5] == [
+        "Restrictions for use (e.g. not for Nuclear Power) by copyright owner",
+        "1 no restrictions for use found\n"
+        "restrictions for use found (see obligations)",
+    ]
+    assert tables["assessment-summary"]["ROWS"][6] == ["Additional notes", "NA"]
+    assert tables["assessment-summary"]["ROWS"][7] == ["General Risks (optional)", "NA"]
+
+    print(pprint.pformat(tables["assessment-summary"]["ROWS"]))
+
     assert tables["assessment-summary"]["ROWS"] == [
         [
             "General assessment",
@@ -76,6 +175,7 @@ def test_that_the_state_xml_file_is_analyzed_as_expected(docx_report_file):
         ["Additional notes", "NA"],
         ["General Risks (optional)", "NA"],
     ]
+
     assert tables["required-license-compliance-tasks"]["ROWS"] == []
     assert tables["common-obligations-restrictions-and-risks"]["ROWS"] == [
         [
