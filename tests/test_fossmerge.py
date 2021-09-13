@@ -84,7 +84,7 @@ def test_merge_report(runner, cli_xml_file, docx_report_file):
     # assert isinstance(doc, OrderedDict)
     # x = xmltodict.unparse(doc,pretty=True)
     # print(x)
-    assert result.exit_code == 0 
+    assert result.exit_code == 0
 
     """
 - 1. General Assessment ==> id=assessment-summary

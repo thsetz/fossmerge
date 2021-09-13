@@ -105,7 +105,7 @@ def Log(ctx, log_level, message_text):
 
 @cli.command("analyze_report")
 @click.option("--report_file_name", help="The name of the Report (docx) File.")
-@click.option("--report_table_name", help="The Name of the Table.")
+@click.option("--report_table_name", help="The Name of the Table or ALL.")
 @click.pass_context
 def analyze_report(ctx, report_file_name, report_table_name):
     """Extract Table data from docx File."""
@@ -113,12 +113,25 @@ def analyze_report(ctx, report_file_name, report_table_name):
         f"analyze_report called with file_name {report_file_name} table_name {report_table_name} "
     )
 
-    if report_table_name not in AVAILABLE_TABLES.keys():
-        logger.fatal(f"{report_table_name} not a valid report Table name")
+    if report_table_name not in AVAILABLE_TABLES.keys() and report_table_name != "ALL":
+        logger.fatal(f"{report_table_name} not a valid report Table name.")
+        logger.fatal(
+            f"{report_table_name} not a valid report Table name. Valid are {pprint.pformat(AVAILABLE_TABLES.keys())}"
+        )
         sys.exit(2)
+
     ctx.obj["FILE_NAME"] = report_file_name
-    ctx.obj["TABLE_NAME"] = report_table_name
-    ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name)
+
+    if report_table_name == "ALL":
+        for table_name in AVAILABLE_TABLES.keys():
+            print(f"{table_name}")
+            ctx.obj["TABLE_NAME"] = report_table_name
+            ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name)
+            logger.debug(pprint.pformat(f'{ctx.obj["AVAILABLE_TABLES"][table_name]}'))
+
+    else:
+        ctx.obj["TABLE_NAME"] = report_table_name
+        ctx.obj["AVAILABLE_TABLES"] = convert_and_analyze_docx(report_file_name)
 
     # if report_table_name:
     #    logger.debug(pprint.pformat(f'{ctx.obj["AVAILABLE_TABLES"][table_name]}'))
@@ -129,8 +142,9 @@ def analyze_report(ctx, report_file_name, report_table_name):
 
 @cli.command("analyze_clixml")
 @click.option("--clixml_file_name", help="The name of the clixml() File.")
+@click.option("--clixml_section", help="The name of the clixml section.")
 @click.pass_context
-def analyze_clixml(ctx, clixml_file_name):
+def analyze_clixml(ctx, clixml_file_name, clixml_section):
     """Extract  data from clixml File."""
     logger.debug(f"analyze_clixml called with file_name {clixml_file_name} ")
     ctx.obj["CLIXML_FILE_NAME"] = clixml_file_name
@@ -141,6 +155,8 @@ def analyze_clixml(ctx, clixml_file_name):
         diff_xmldict(ctx.obj["CLIXML_NORMALIZED_DICT"], ctx.obj["CLIXML_DICT"])
     else:
         logger.debug(f"analyze_clixml  {clixml_file_name} format was OK ")
+    if clixml_section == "ALL":
+        print(pprint.pformat((ctx.obj["CLIXML_NORMALIZED_DICT"])))
 
 
 @cli.command("merge_report")
@@ -155,14 +171,21 @@ def merge_report(
     ctx, clixml_file_name, report_file_name, report_table_name, clixml_section
 ):
     """Extract  data from clixml File."""
+
+    # In REPORT Files (docx) heißt die section: irrelevant-files
+    # In CLI-CML Files heißt  die section: IrrelevantFiles
+
     logger.debug(
         f"merge_report called with clixml_file_name {clixml_file_name} \
+          clixml_section {clixml_section} \
           report_file_name {report_file_name} \
           report_table_name {report_table_name}  "
     )
 
-    # Get report and CLIXML descriptions with the respective commands
+    logger.debug("Get CLIXML descriptions with the respective command")
     ctx.invoke(analyze_clixml, clixml_file_name=clixml_file_name)
+
+    logger.debug("Get Report descriptions with the respective command")
     ctx.invoke(
         analyze_report,
         report_file_name=report_file_name,
@@ -213,34 +236,32 @@ def merge_report(
                 else:
                     ld2.append(row["Path"] + "/" + row["Files"])
             return ld2
+
         compactified_report_table_list = compactify(list_of_table_dicts)
         logger.info(
             f" Compactified Report Table {report_table_name} has the following \
                 elements {pprint.pformat(compactified_report_table_list)}"
         )
 
-        clixml_set=set(clixml_dict[clixml_section]["Files"])
-        report_set=set(compactified_report_table_list)
-        logger.info( f"report files {pprint.pformat(report_set)} ")
-        logger.info( f"clixml files {pprint.pformat(clixml_set)} ")
+        clixml_set = set(clixml_dict[clixml_section]["Files"])
+        report_set = set(compactified_report_table_list)
+        logger.debug(f"report files {pprint.pformat(report_set)} ")
+        logger.debug(f"clixml files {pprint.pformat(clixml_set)} ")
 
-        all_irrelevant_files = clixml_set  | report_set # union
-        in_both =   clixml_set.intersection(report_set) 
+        all_irrelevant_files = clixml_set | report_set  # union
+        in_both = clixml_set.intersection(report_set)
         only_in_clixml = clixml_set.difference(report_set)
         only_in_report = report_set.difference(clixml_set)
 
-        logger.info( f"All irrelevant Files {pprint.pformat(all_irrelevant_files)} ")
-        if only_in_clixml == set() and only_in_clixml ==set():
-           logger.info( f"All irrelevant Files are up to date ")
+        logger.debug(f"All irrelevant Files {pprint.pformat(all_irrelevant_files)} ")
+        if only_in_clixml == set() and only_in_clixml == set():
+            logger.info(f"All irrelevant Files are up to date ")
         else:
-           logger.warning( f"irrelevant Files need update ")
-           logger.warning( f"Files in both {pprint.pformat(in_both)} ")
-           logger.warning( f"Files only in report  {pprint.pformat(only_in_report)} ")
-           logger.warning( f"Files only in clixml {pprint.pformat(only_in_clixml)} ")
-           sys.exit(2)
-
-
-
+            logger.warning(f"irrelevant Files need update ")
+            logger.warning(f"Files in both {pprint.pformat(in_both)} ")
+            logger.warning(f"Files only in report  {pprint.pformat(only_in_report)} ")
+            logger.warning(f"Files only in clixml {pprint.pformat(only_in_clixml)} ")
+            sys.exit(2)
 
     else:
         logger.fatal(f"{clixml_section} currently not allowed to work on")

@@ -147,7 +147,7 @@ def convert_to_html(filename: str):
     cmd = ["pandoc", filename, "-f", "docx+styles", "-o", "_report.html"]
     process = Popen(cmd, stdout=PIPE)
     message = f"Execute {cmd} in pid {process.pid}"
-    logger.info(message)
+    logger.debug(message)
     out, err = process.communicate()
     exit_code = process.poll()
     if exit_code != 0:
@@ -157,7 +157,7 @@ def convert_to_html(filename: str):
         message = (
             f"Execute {cmd} in pid {process.pid} Returned {exit_code} in {os.getcwd()}"
         )
-        logger.info(message)
+        logger.debug(message)
         assert os.path.isfile("_report.html")
         return open("_report.html", "rb").read()
 
@@ -208,12 +208,12 @@ def analyse(html_string: str):
         if tag.name == "table":
             amount_tables += 1
             rows_in_table = tag.find_all("tr")
-            logger.info(
+            logger.debug(
                 f"Table {amount_tables} Found - \
                 using id {current_id} - \
                 {len(rows_in_table)} rows. "
             )
-            # Add the tabl data to AVAILABLE_TABLES[]["ROWS"]
+            # Add the table data to AVAILABLE_TABLES[]["ROWS"]
             for row_number in range(len(rows_in_table)):
                 tds = rows_in_table[row_number].find_all("td")
                 row = [td.text.strip() for td in tds]

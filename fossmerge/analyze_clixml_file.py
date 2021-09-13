@@ -47,7 +47,7 @@ def convert_clixml_to_xmldict(file_name: os.path):
 
 def check_xmldict(doc: dict):
     """[summary]
-        A given a CLIXML-doc  xmltodict dict is analyzedi/normalized e.g missing wrong Attributes are added/modified.py
+        A given a CLIXML-doc  xmltodict dict is analyzed/normalized e.g missing wrong Attributes are added/modified.py
 
     :param doc: [xmltodict dict created with xmltodict.parse(...)]
     :type doc: dict
