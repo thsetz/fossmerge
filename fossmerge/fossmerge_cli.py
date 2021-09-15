@@ -8,6 +8,20 @@ from .analyze_docx_file import RESULT_DIR, AVAILABLE_TABLES, convert_and_analyze
 from .analyze_clixml_file import convert_clixml_to_xmldict, check_xmldict, diff_xmldict
 import click
 
+
+class Error(Exception):
+    """Base class for exceptions in this module."""
+
+    pass
+
+
+class DocumentError(Error):
+    """Document error"""
+
+    def __init__(self, description):
+        self.message = description
+
+
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger("fossmerge")
 formatter = logging.Formatter(

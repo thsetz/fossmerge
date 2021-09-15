@@ -7,10 +7,38 @@ def test_that_the_fixture_returns_an_existing_file(docx_report_file):
     assert os.path.exists(docx_report_file)
 
 
+def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_NON_FIRST_values_using_dictionary_only(
+    docx_report_file,
+):
+
+    ds, ld = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
+    tables = analyze_docx_file.AVAILABLE_TABLES
+    assert ds.keys() == tables.keys()
+    # assert ld.keys() == tables.keys()
+    # within the dynamically generated list of dictionaries (ld) we
+    # have to find the same tables as in the static (analyze_docx_file.AVAILABLE_TABLES)
+    # description. For sure a dynamically found table has to be in the statically defined tables.
+    if ld.keys() == tables.keys():
+        pass
+    else:
+        for key in ld.keys():
+            if key in tables.keys():
+                print(f"OK: table: {key} in AVAILABLE_TABLES")
+            else:
+                print(f"NOK: table: {key} NOT in AVAILABLE_TABLES ")
+                # EXIT here
+                assert False
+
+        for key in tables.keys():
+            if key in ld.keys():
+                print(f"OK: table: {key} in ld")
+            else:
+                print(f"NOK: table: {key} NOT in ld")
+
+
 def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_FIRST_values(
     docx_report_file,
 ):
-    analyze_docx_file.reset()
     ds, ld = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
     tables = analyze_docx_file.AVAILABLE_TABLES
     assert ds.keys() == tables.keys()
@@ -21,68 +49,113 @@ def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_FIRST_values(
         "Key": "OSS Component Clearing report",
         "Value": "",
     }
+    assert tables["FIRST"]["ROWS"][0] == ["OSS Component Clearing report", "", ""]
 
     assert ld["FIRST"][1] == {
         "Comment": "FOSSology Generation",
         "Key": "Clearing Information",
         "Value": "Department",
     }
+    assert tables["FIRST"]["ROWS"][1] == [
+        "Clearing Information",
+        "Department",
+        "FOSSology Generation",
+    ]
 
     assert ld["FIRST"][2] == {
         "Comment": "2019/10/16 siddarth.hs@siemens.com (CT BE)",
         "Key": "",
         "Value": "Prepared by",
     }
+    assert tables["FIRST"]["ROWS"][2] == [
+        "",
+        "Prepared by",
+        "2019/10/16 siddarth.hs@siemens.com (CT BE)",
+    ]
 
     assert ld["FIRST"][3] == {
         "Comment": "2019/10/16 anju.john@siemens.com (CT BE)",
         "Key": "",
         "Value": "Reviewed by (opt.)",
     }
+    assert tables["FIRST"]["ROWS"][3] == [
+        "",
+        "Reviewed by (opt.)",
+        "2019/10/16 anju.john@siemens.com (CT BE)",
+    ]
 
     assert ld["FIRST"][4] == {
         "Comment": "NA",
         "Key": "",
         "Value": "Report release date",
     }
+    assert tables["FIRST"]["ROWS"][4] == ["", "Report release date", "NA"]
+
     assert ld["FIRST"][5] == {
         "Comment": "NA",
         "Key": "Component Information",
         "Value": "Community",
     }
+    assert tables["FIRST"]["ROWS"][5] == ["Component Information", "Community", "NA"]
     assert ld["FIRST"][6] == {"Comment": "zlib", "Key": "", "Value": "Component"}
+    assert tables["FIRST"]["ROWS"][6] == ["", "Component", "zlib"]
 
     assert ld["FIRST"][7] == {"Comment": "1.2.11", "Key": "", "Value": "Version"}
+    assert tables["FIRST"]["ROWS"][7] == ["", "Version", "1.2.11"]
 
     assert ld["FIRST"][8] == {
         "Comment": "11196A78B14DDBCF82FA9E4ADD00F76323E93345",
         "Key": "",
         "Value": "Component hash (SHA-1)",
     }
+    assert tables["FIRST"]["ROWS"][8] == [
+        "",
+        "Component hash (SHA-1)",
+        "11196A78B14DDBCF82FA9E4ADD00F76323E93345",
+    ]
 
     assert ld["FIRST"][9] == {"Comment": "NA", "Key": "", "Value": "Release date"}
+    assert tables["FIRST"]["ROWS"][9] == ["", "Release date", "NA"]
 
     assert ld["FIRST"][10] == {
         "Comment": "Zlib.",
         "Key": "",
         "Value": "Main license(s)",
     }
+    assert tables["FIRST"]["ROWS"][10] == ["", "Main license(s)", "Zlib."]
+
     assert ld["FIRST"][11] == {
         "Comment": "Info-ZIP, Public-domain.",
         "Key": "",
         "Value": "Other license(s)",
     }
+    assert tables["FIRST"]["ROWS"][11] == [
+        "",
+        "Other license(s)",
+        "Info-ZIP, Public-domain.",
+    ]
     assert ld["FIRST"][12] == {
         "Comment": "https://fossology.siemens.com/repo/?mod=showjobs&upload=19716",
         "Key": "",
         "Value": "Fossology Upload/Package Link",
     }
 
+    assert tables["FIRST"]["ROWS"][12] == [
+        "",
+        "Fossology Upload/Package Link",
+        "https://fossology.siemens.com/repo/?mod=showjobs&upload=19716",
+    ]
+
     assert ld["FIRST"][13] == {
         "Comment": "https://sw360.siemens.com/group/guest/components/-/component/release/detailRelease/7f75885d309970833f4187295dc54718",
         "Key": "",
         "Value": "SW360 Portal Link",
     }
+    assert tables["FIRST"]["ROWS"][13] == [
+        "",
+        "SW360 Portal Link",
+        "https://sw360.siemens.com/group/guest/components/-/component/release/detailRelease/7f75885d309970833f4187295dc54718",
+    ]
     assert ld["FIRST"][14] == {
         "Comment": "GPL, Info-ZIP, No_license_found, Perl-possibility, "
         "Public-domain, See-doc.OTHER, UnclassifiedLicense, Zlib, "
@@ -90,15 +163,20 @@ def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_FIRST_values(
         "Key": "",
         "Value": "Result of License Scan",
     }
+    assert tables["FIRST"]["ROWS"][14] == [
+        "",
+        "Result of License Scan",
+        "GPL, Info-ZIP, No_license_found, Perl-possibility, Public-domain, "
+        "See-doc.OTHER, UnclassifiedLicense, Zlib, Zlib-possibility.",
+    ]
+    # assert False
 
 
-def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_NON_FIRST_values(
+def test_that_the_state_xml_file_is_analyzed_as_expected_for_the_NON_FIRST_values_using_AVAILABLE_TABLES_ONLY(
     docx_report_file,
 ):
-    analyze_docx_file.reset()
 
     ds, ld = analyze_docx_file.convert_and_analyze_docx(docx_report_file)
-    tables = analyze_docx_file.AVAILABLE_TABLES
     tables = analyze_docx_file.AVAILABLE_TABLES
     assert ds.keys() == tables.keys()
     assert len(tables["assessment-summary"]["ROWS"]) == 8

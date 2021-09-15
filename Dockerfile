@@ -3,7 +3,7 @@ RUN apt-get update && apt-get upgrade && apt-get install -y \
 pandoc  \
 python3-lxml  \
 vim  \
-apt-get install build-essential
+build-essential
 
 RUN pip3 install poetry 
 

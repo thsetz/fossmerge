@@ -33,8 +33,15 @@ black:
 doc:
 	poetry run sphinx-build -b html docs-source docs/
 
+test1: black
+	poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  tests/test_analyze_report_file.py
+
 test: black
-	poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE) 
+	#poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  tests/test_analyze_report_file.py::test_that_the_state_xml_file_is_analyzed_as_expected_for_the_FIRST_values
+	#poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  tests/test_analyze_report_file.py::test_that_the_state_xml_file_is_analyzed_as_expected_for_the_NON_FIRST_values
+	#poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  tests/test_analyze_report_file.py
+	poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  tests/test_fossmerge_big_files.py
+	#poetry run  coverage run  --source=fossmerge -m pytest $(VERBOSE)  
 
 # - 17. Comparing Irrelevant Files
 run: black

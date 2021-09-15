@@ -5,6 +5,8 @@ import pprint
 from subprocess import Popen, PIPE
 import logging
 
+from fossmerge.exceptions import DocumentError, PandocGenerationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -139,6 +141,7 @@ AVAILABLE_TABLES = {
 
 
 def reset():
+    """"""
     global AVAILABLE_TABLES
     logger.warning("Reset AVAILABLE_TABLES")
     for table in AVAILABLE_TABLES.keys():
@@ -150,7 +153,7 @@ def convert_to_html(filename: str):
     :param filename: [Path to input (docx) File.]
     :type filename: str
     :return: [content of the with pandoc generated html file.]
-    :rtype: [type]
+    :rtype: [bytestring]
     """
     cmd = ["pandoc", filename, "-f", "docx+styles", "-o", "_report.html"]
     process = Popen(cmd, stdout=PIPE)
@@ -158,13 +161,14 @@ def convert_to_html(filename: str):
     logger.debug(message)
     out, err = process.communicate()
     exit_code = process.poll()
+    message = (
+        f"Execute {cmd} in pid {process.pid} Returned {exit_code} in {os.getcwd()}"
+    )
     if exit_code != 0:
-        logger.fatal(f"Fatal error: {out} / {error}")
-        raise
+        fatal_message = f"Error generating html for {filename} : message {message}: stdout: {out} stderr: {err}"
+        logger.fatal(fatal_message)
+        raise PandocGenerationError(fatal_message)
     else:
-        message = (
-            f"Execute {cmd} in pid {process.pid} Returned {exit_code} in {os.getcwd()}"
-        )
         logger.debug(message)
         assert os.path.isfile("_report.html")
         return open("_report.html", "rb").read()
@@ -180,6 +184,7 @@ def convert_and_analyze_docx(filename: os.path):
     """
 
     html_string = convert_to_html(filename)
+    reset()  # Clear AVAILABE_TABLES Data
     return analyse(html_string)
 
 
@@ -188,8 +193,8 @@ def analyse(html_string: str):
 
     :param html_string: [html string of report document.]
     :type html_string: str
-    :return: [list of dictionaries having the content of the tables.]
-    :rtype: [type]
+    :return: [(AVAILABLE_TABLES, ld list of dictionaries having the content of the tables.)]
+    :rtype: [(dict,dict)]
 
     We parse  "html_string" - and set what is needed. 
     All tables and "id" elements are on the same hierarchy-level of the document -
@@ -202,92 +207,217 @@ def analyse(html_string: str):
     For debugging/tracing purposes we store the information (as list/dict)
     in the RESULT_DIR.
 
+    NOTE:
 
-
+        lxml's analysis of the html document behaves different on some plattforms.
+        The  first tables data-nodes are returned as triple (on ubuntu) and  as 
+        1,2,3-tuple on darwin. 
+        That extra work is done in the FIRST tabel section.
     """
     soup = bs.BeautifulSoup(html_string, "lxml")
     if not os.path.isdir(RESULT_DIR):
         os.mkdir(RESULT_DIR)
-    current_id = "FIRST"
+    current_table_name = "FIRST"
     amount_tables = 0
     ld = {}
     for tag in soup.find_all(True):
         if tag.name == "h2" or tag.name == "h3":
-            current_id = tag.attrs["id"]
+            current_table_name = tag.attrs["id"]
         if tag.name == "table":
             amount_tables += 1
             rows_in_table = tag.find_all("tr")
             logger.debug(
                 f"Table {amount_tables} Found - \
-                using id {current_id} - \
+                using id {current_table_name} - \
                 {len(rows_in_table)} rows. "
             )
             # Add the table data to AVAILABLE_TABLES[]["ROWS"]
             for row_number in range(len(rows_in_table)):
                 tds = rows_in_table[row_number].find_all("td")
                 row = [td.text.strip() for td in tds]
-                AVAILABLE_TABLES[current_id]["ROWS"].append(row)
-            print(f' {current_id} has {len(AVAILABLE_TABLES[current_id]["ROWS"])} rows')
+                AVAILABLE_TABLES[current_table_name]["ROWS"].append(row)
+            (
+                f' {current_table_name} has {len(AVAILABLE_TABLES[current_table_name]["ROWS"])} rows'
+            )
             # generate each table as list of dict ==> eases debugging ....
             if True:
-                ld[current_id] = []
-                for row in range(len(AVAILABLE_TABLES[current_id]["ROWS"])):
+                ld[current_table_name] = []
+                # for row in range(len(AVAILABLE_TABLES[current_table_name]["ROWS"])):
+                for index, row in enumerate(
+                    AVAILABLE_TABLES[current_table_name]["ROWS"]
+                ):
                     d = {}
-                    if current_id == "FIRST":
-                        # Currently the FIRST table has 1-3 columns - fix this here to
-                        # Always three columns
-                        # "COLUMN_CONTENT": ("Key","Value","Comment"),
-                        # lxml handles the FIRST table different on ubuntu/mac
-                        #
+                    if current_table_name == "FIRST":
                         undefined_value = ""
-                        if len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 1:
-                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
+                        length = len(
+                            AVAILABLE_TABLES[current_table_name]["ROWS"][index]
+                        )
+                        if length == 0:
+                            # XXX maybe remove the element ?? error came first with big document
+                            d["Key"] = undefined_value
                             d["Value"] = undefined_value
                             d["Comment"] = undefined_value
-                        elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 2:
-                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
+                            logger.warning(
+                                "FIRST TABLE:row{index} had a row without data (row_len is 0) inserted {d} "
+                            )
+                        elif length == 1:
+                            d["Key"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][0]
+                            d["Value"] = undefined_value
+                            d["Comment"] = undefined_value
+                        elif length == 2:
+                            d["Key"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][1]
                             d["Key"] = undefined_value
-                            d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
+                            d["Value"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][0]
                             # d["Comment"] = undefined_value
-                            d["Comment"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
-                        elif len(AVAILABLE_TABLES[current_id]["ROWS"][row]) == 3:
-                            d["Key"] = AVAILABLE_TABLES[current_id]["ROWS"][row][0]
-                            d["Value"] = AVAILABLE_TABLES[current_id]["ROWS"][row][1]
-                            d["Comment"] = AVAILABLE_TABLES[current_id]["ROWS"][row][2]
+                            d["Comment"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][1]
+                        elif length == 3:
+                            d["Key"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][0]
+                            d["Value"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][1]
+                            d["Comment"] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][2]
                         else:
-                            logger.fatal(
-                                "IMPOSSIBLE Data: FIRST table has more than three columns: "
-                            )
-                            raise
-                    else:
-                        for elem in enumerate(
-                            AVAILABLE_TABLES[current_id]["COLUMN_CONTENT"]
-                        ):
-                            # elems are e.g. (0, 'Statements') (1, 'Comments') (2, 'File path')
-                            d[elem[1]] = AVAILABLE_TABLES[current_id]["ROWS"][row][
-                                elem[0]
-                            ]
+                            message = f'IMPOSSIBLE Data: FIRST table index:{index} has more than three ({length}) columns : \
+                                data: {pprint.pformat(AVAILABLE_TABLES[current_table_name]["ROWS"][index])}'
+                            logger.fatal(message)
+                            raise DocumentError(message)
 
+                        # Fix the rows, as on different oses different rows are returned with lxml
+                        # XXX Fix lxml Usage
+                        def fix_documents_row(index, row, new_row, message):
+                            """"""
+                            logger.warning(
+                                f" table {current_table_name}:{index} has wrong len. {message}Fix it:  {row} becomes {new_row}"
+                            )
+                            AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ] = new_row
+
+                        if index == 0:
+                            message = f"{index}: OSS Component Clearing report"
+                            if len(row) == 1:
+                                new_row = [row[0], "", ""]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 1:
+                            message = "{index}: Clearing Info , Department, GENERIC"
+                            # ROW OK
+                        elif index == 2:
+                            message = f" Clearing Info , Prepared by , GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 3:
+                            message = f"{index}: Clearing Info , Reviewed  by , GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 4:
+                            message = (
+                                "{index}: Clearing Info , Report Release date , GENERIC"
+                            )
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 5:
+                            message = "{index}: Component Info , Community , GENERIC"
+                            print(pprint.pformat(row))
+                            # ROW OK
+                        elif index == 6:
+                            message = f"{index}: Component Info , Component, GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 7:
+                            message = f"{index}: Component Info , Version, GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 8:
+                            message = f"{index}: Component Info , hash, GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 9:
+                            message = (
+                                f"{index}: Component Info , release_date , GENERIC"
+                            )
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 10:
+                            messge = f"{index}: Component Info , main license, GENERIC"
+                            if len(row) == 2:
+                                new_row = ["", row[0], row[1]]
+                                fix_documents_row(index, row, new_row, message)
+                        elif index == 11:
+                            message = (
+                                f"{index}: Component Info , Other license, GENERIC"
+                            )
+                            # ROW OK
+                        elif index == 12:
+                            message = f"{index}: Component Info ,Fossology Upload/Package Link , GENERIC"
+                            # ROW OK
+                        elif index == 13:
+                            message = (
+                                "{index}: Component Info ,SW 360 Portal Link , GENERIC"
+                            )
+                            # ROW OK
+                        elif index == 14:
+                            message = f"{index}: Component Info ,Result of License Scan , GENERIC"
+                            # ROW OK
+                        else:
+                            message = (
+                                f"{index}: Impossible Index in  {current_table_name}"
+                            )
+                            logger.fatal(message)
+                            raise DocumentError(message)
+
+                    else:  # All tables beside FIRST
+                        if current_table_name not in AVAILABLE_TABLES.keys():
+                            message = f"{current_table_name}: Impossible Table Name. Update AVAILABLE_TABLES."
+                            logger.fatal(message)
+                            raise DocumentError(message)
+
+                        if len(row) == 0:
+                            logger.warning(
+                                f'skip row {current_table_name}:{index} it is empty.  data: {row} - maybe it should be deleted from AVAILABLE_TABLES[{current_table_name}]["ROWS"]? '
+                            )
+                            continue
+
+                        # Given the description in the tables COLUMN_CONTENT we are able to map each row
+                        # to its given description.
+                        for row_description_index, name in enumerate(
+                            AVAILABLE_TABLES[current_table_name]["COLUMN_CONTENT"]
+                        ):
+                            d[name] = AVAILABLE_TABLES[current_table_name]["ROWS"][
+                                index
+                            ][row_description_index]
                         logger.debug(
-                            f'row: {AVAILABLE_TABLES[current_id]["ROWS"][row]}'
+                            f"Table {current_table_name}: ADDED dict {d} from row {row} at table offset: {index}"
                         )
-                        if len(d.keys()) != len(
-                            AVAILABLE_TABLES[current_id]["ROWS"][row]
-                        ):
-                            print(
-                                f'table {current_id}:{row} \n d  {len(d.keys())} \n {len(AVAILABLE_TABLES[current_id]["ROWS"][row])}'
-                            )
+                    ld[current_table_name].append(d)
 
-                    ld[current_id].append(d)
-
-                # print(f"START:  Current Table {current_id}")
-                # print(pprint.pformat(ld[current_id]))
-                # print(f"START:  Current Table {current_id}")
+                # if ctx.obj["DEBUG"]:
+                #     print(f"START:  Current Table {current_table_name}")
+                #     print(pprint.pformat(ld[current_table_name]))
+                #     print(f"START:  Current Table {current_table_name}")
 
             # Save the list of the table
-            with open(f"{RESULT_DIR}/{current_id}", "w") as fp:
-                fp.write(pprint.pformat(AVAILABLE_TABLES[current_id]["ROWS"]))
+            with open(f"{RESULT_DIR}/{current_table_name}", "w") as fp:
+                fp.write(pprint.pformat(AVAILABLE_TABLES[current_table_name]["ROWS"]))
             # Save the dict of the table
-            with open(f"{RESULT_DIR}/{current_id}_d", "w") as fp:
+            with open(f"{RESULT_DIR}/{current_table_name}_d", "w") as fp:
                 fp.write(pprint.pformat(ld))
     return AVAILABLE_TABLES, ld
