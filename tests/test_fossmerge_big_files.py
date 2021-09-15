@@ -5,7 +5,7 @@ import xmltodict
 from fossmerge import analyze_docx_file
 
 
-def xest_current_report(runner, big_docx_report_file):
+def test_current_report(runner, big_docx_report_file):
     """Test the CLI."""
     d = {}
     result = runner.invoke(
