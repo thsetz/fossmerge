@@ -11,9 +11,10 @@ def test_current_report(runner, big_docx_report_file):
     d = {}
     # XXX Currently the Github Ci does not hav sufficient XXX to run pandoc
     # with such big files - so skip them here.
-    # RUNNER_OS is only defined in the CI (GitHub environment)
-    ci_environment = os.environ.get("RUNNNER_OS", "LOCAL")
-    if ci_environment != "LOCAL":
+    # The environment Variable SKIP_BIG_PANDOC_TESTS is set via 
+    # the GitHub workflow file .github/workflows/fossmergetest.yml .
+    skip_big_pandoc_tests = os.environ.get("SKIP_BIG_PANDOC_TESTS", "NO")
+    if skip_big_pandoc_tests == "YES":
         return
     result = runner.invoke(
         fossmerge_cli.cli,

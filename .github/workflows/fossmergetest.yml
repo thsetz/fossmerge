@@ -25,6 +25,8 @@ jobs:
           pip install poetry
           poetry install
       - name: Run tests
+        env:
+           SKIP_BIG_PANDOC_TESTS: YES
         run: |
           poetry run  coverage run  --source=fossmerge -m pytest -vvv --tb=auto  tests
           poetry run coverage report -m
