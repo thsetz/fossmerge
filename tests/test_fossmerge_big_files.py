@@ -2,12 +2,19 @@ from collections import OrderedDict
 from fossmerge import __version__, fossmerge_cli
 import pprint
 import xmltodict
+import os
 from fossmerge import analyze_docx_file
 
 
 def test_current_report(runner, big_docx_report_file):
     """Test the CLI."""
     d = {}
+    # XXX Currently the Github Ci does not hav sufficient XXX to run pandoc
+    # with such big files - so skip them here.
+    # RUNNER_OS is only defined in the CI (GitHub environment)
+    ci_environment = os.environ.get("RUNNNER_OS", "LOCAL")
+    if ci_environment != "LOCAL":
+        return
     result = runner.invoke(
         fossmerge_cli.cli,
         [
